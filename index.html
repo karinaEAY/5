@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Chest Reveal</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Use Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        html, body {
+            height: 100%; /* Ensure html and body take full height */
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Hide scrollbars */
+            /* Light background gradient (Soft clouds/pastel) */
+            background: linear-gradient(135deg, #fdfbfb, #ebedee, #f3e7e9, #e3eeff);
+            background-size: 400% 400%;
+            animation: gradient-animation 15s ease infinite;
+            min-height: 100vh; /* Ensure full height for centering */
+            display: flex; /* Use flexbox for centering */
+            align-items: center; /* Vertical center */
+            justify-content: center; /* Horizontal center */
+            padding: 0.5rem; /* Equivalent to p-2 for body */
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* --- Chest Animations --- */
+        .shake-wiggle {
+            animation: shake-enhanced 0.3s cubic-bezier(.36,.07,.19,.97) both infinite;
+            transform-origin: center center;
+        }
+
+        @keyframes shake-enhanced {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translate(-8px, -6px) rotate(-5deg); }
+            20%, 40%, 60%, 80% { transform: translate(8px, 6px) rotate(5deg); }
+        }
+
+        /* --- Explosion Particles (Chest pieces) --- */
+        #explosion-container {
+            /* Ensure it doesn't interfere with clicks */
+            pointer-events: none;
+            position: fixed; /* Use fixed for accurate positioning relative to viewport */
+            transform: translateZ(0); /* Promote to own layer for performance */
+            will-change: transform, opacity;
+        }
+        .explosion-particle {
+            position: absolute;
+            background-size: cover; /* Important for image shattering */
+            animation: explode 1.2s ease-out forwards;
+            opacity: 1;
+            /* Random dimensions for pieces */
+            width: var(--particle-width);
+            height: var(--particle-height);
+            will-change: transform, opacity; /* Optimize animation */
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(0, 0) rotate(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: var(--explode-transform);
+                opacity: 0;
+            }
+        }
+
+        /* --- Gift Pop-in Animation --- */
+        .gift-pop {
+            animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transform: scale(0);
+            opacity: 0;
+            animation-delay: var(--gift-delay);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15); /* Softer shadow for light mode */
+            will-change: transform, opacity;
+        }
+
+        @keyframes pop-in {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* --- Fade-in Animation --- */
+        .fade-in {
+            animation: fade 0.8s ease-in-out forwards;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+
+        @keyframes fade {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Collect Button Styles --- */
+        #collect-btn {
+            background-image: linear-gradient(to right, #ee0979 0%, #ff6a00 100%); /* TikTok gradient */
+            box-shadow: 0 8px 15px rgba(238, 9, 121, 0.3);
+            border: none;
+            color: white;
+            padding: 10px 30px; /* Adjusted padding */
+            font-size: 1.25rem; /* Adjusted font size */
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            transform: scale(1);
+            display: block; /* Make it a block element for margin auto */
+            margin-left: auto;
+            margin-right: auto;
+            will-change: transform, box-shadow;
+        }
+        #collect-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 12px 20px rgba(238, 9, 121, 0.4);
+        }
+
+         /* Responsive adjustments for button */
+        @media (min-width: 768px) { /* md breakpoint */
+            #collect-btn {
+                padding: 15px 40px;
+                font-size: 1.5rem; /* Restore larger size on bigger screens */
+            }
+        }
+
+        /* --- Final Confetti Particles --- */
+        .confetti-particle {
+            position: fixed; /* Use fixed positioning for viewport coverage */
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: fall 5s linear infinite;
+            opacity: 0;
+            top: -20px; /* Start above screen */
+            will-change: transform, opacity;
+            z-index: 100; /* Ensure confetti is above other elements */
+        }
+         #confetti-container {
+             z-index: 100; /* Ensure container is above */
+         }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0vh) rotate(0deg); /* Start relative to viewport height */
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(110vh) rotate(720deg); /* Fall below viewport */
+                opacity: 1;
+            }
+        }
+
+        /* --- Animated Checkmark (New Style) --- */
+        .checkmark-container {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            display: flex; /* Use flex to center SVG */
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            position: relative;
+            overflow: hidden; /* Hide parts of checkmark that might go outside */
+            background-color: transparent;
+            box-shadow: inset 0px 0px 0px transparent;
+            animation: container-fill 0.4s ease-in-out 0.4s forwards, container-bounce 0.3s ease-in-out 0.9s both;
+            will-change: transform, box-shadow, background-color;
+        }
+
+        .checkmark-svg-new {
+            width: 70%; /* Adjust size of the new checkmark */
+            height: 70%;
+            stroke-width: 6px; /* Bolder stroke */
+            stroke: #fff; /* White checkmark */
+            fill: none;
+            stroke-linecap: round; /* Rounded ends */
+            stroke-linejoin: round; /* Rounded corners */
+            stroke-dasharray: 100; /* Adjust dasharray for the new path length */
+            stroke-dashoffset: 100; /* Start fully hidden */
+            transform: scale(0); /* Start scaled down */
+            animation: checkmark-draw-scale 0.5s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+            will-change: stroke-dashoffset, transform;
+        }
+
+
+        @keyframes checkmark-draw-scale {
+             0% {
+                stroke-dashoffset: 100;
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.1); /* Slight overshoot */
+            }
+            100% {
+                stroke-dashoffset: 0;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes container-fill {
+            100% {
+                background-color: #4CAF50; /* Fill with green */
+                box-shadow: inset 0px 0px 0px 45px #4CAF50; /* Adjust to match fill */
+            }
+        }
+        @keyframes container-bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="app" class="relative w-full min-h-screen flex flex-col items-center justify-center text-gray-800 p-4">
+
+        
+        <div id="chest-container" class="text-center w-full max-w-md">
+            
+            <img id="chest"
+                 src="https://i.ibb.co/JwR6GsWj/ttbox.png"
+                 alt="Treasure Chest"
+                 class="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 object-contain cursor-pointer transition-transform duration-200 hover:scale-105 mx-auto drop-shadow-xl"
+                 onerror="this.onerror=null; this.src='https://placehold.co/384x384/8B4513/FFFFFF?text=Chest';">
+            
+            <p class="mt-4 text-lg sm:text-xl text-gray-600 font-bold">Click the chest to open it!</p>
+        </div>
+
+        
+        <div id="explosion-container"></div>
+
+        
+        <div id="gifts-container" class="hidden w-full max-w-xs sm:max-w-xl md:max-w-3xl mx-auto p-4 text-center">
+            
+            <div id="gifts-grid" class="flex flex-wrap justify-center items-center gap-3 sm:gap-4 md:gap-8">
+                
+            </div>
+            
+            <button id="collect-btn" class="hidden mt-6 sm:mt-10 fade-in shadow-lg">
+                Collect Them All!
+            </button>
+        </div>
+
+
+        
+        <div id="form-container" class="hidden w-full max-w-xs sm:max-w-md p-6 sm:p-8 bg-white bg-opacity-90 backdrop-blur-md rounded-2xl shadow-2xl text-center border-2 border-pink-200">
+            
+            <h2 class="text-3xl sm:text-4xl font-extrabold mb-4 sm:mb-6 bg-gradient-to-r from-pink-500 to-orange-500 bg-clip-text text-transparent">You got the gifts!</h2>
+            <p class="text-gray-600 mb-4 sm:mb-6 text-base sm:text-lg">Enter your username to claim them.</p>
+            <input type="text" id="username" class="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 text-sm sm:text-base shadow-inner" placeholder="Enter your username">
+            <button id="proceed-btn" class="mt-4 sm:mt-6 w-full bg-gradient-to-r from-pink-500 to-orange-500 hover:from-pink-600 hover:to-orange-600 text-white font-bold py-2 px-4 sm:py-3 sm:px-6 rounded-lg shadow-lg text-base sm:text-lg transition-all duration-300 transform hover:scale-105">
+                Proceed
+            </button>
+        </div>
+
+        
+        <div id="final-screen" class="hidden text-center max-w-xs sm:max-w-lg md:max-w-2xl">
+            
+             <div class="checkmark-container">
+                 <svg class="checkmark-svg-new" viewBox="0 0 24 24">
+                     <path d="M5 13l4 4L19 7"/>
+                 </svg>
+            </div>
+            <h1 id="final-message" class="text-3xl sm:text-5xl md:text-7xl font-extrabold bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 bg-clip-text text-transparent drop-shadow-sm mt-4"> 
+                
+            </h1>
+            <p class="mt-2 sm:mt-4 text-lg sm:text-2xl text-gray-600">Gift Claimed!</p> 
+        </div>
+
+        
+        <div id="confetti-container" class="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden"></div>
+
+    </div>
+
+    <script>
+        // Get all elements (no changes needed here)
+        const appContainer = document.getElementById('app'); // Get main app container
+        const chestContainer = document.getElementById('chest-container');
+        const chest = document.getElementById('chest');
+        const explosionContainer = document.getElementById('explosion-container');
+        const giftsContainer = document.getElementById('gifts-container');
+        const giftsGrid = document.getElementById('gifts-grid');
+        const collectBtn = document.getElementById('collect-btn');
+        const formContainer = document.getElementById('form-container');
+        const usernameInput = document.getElementById('username');
+        const proceedBtn = document.getElementById('proceed-btn');
+        const finalScreen = document.getElementById('final-screen');
+        const finalMessage = document.getElementById('final-message');
+        const confettiContainer = document.getElementById('confetti-container');
+
+        let isChestClicked = false;
+
+        // --- Gift Data (Most Expensive) ---
+        const giftImages = [
+            'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8f471afbcebfda3841a6cc515e381f58~tplv-obj.webp', // TikTok Universe (44999)
+            'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/f600a2495ab5d250e7da2066484a9383.png~tplv-obj.webp', // Pegasus (42999)
+            'https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/3790b60a52697daa138bf8d0ec27242f.png~tplv-obj.webp', // King of Legends (42999)
+            'https://p16-webcast.tiktokcdn.com/img/alisg/webcast-sg/resource/10b24e92368a854fec1e487712b18a33.png~tplv-obj.webp', // Magic Marcia (42999)
+            'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/resource/bfb8425a7e8fa03f9fec05a973a4a506.png~tplv-obj.webp', // Fire Phoenix (41999)
+            'https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/26f3fbcda383e6093a19b8e7351a164c~tplv-obj.webp'  // Thunder Falcon (39999)
+        ];
+
+        // --- Step 1: Click Chest (no changes needed here) ---
+        chest.addEventListener('click', () => {
+            if (isChestClicked) return;
+            isChestClicked = true;
+            chestContainer.querySelector('p').style.display = 'none';
+            setTimeout(() => {
+                chest.classList.add('shake-wiggle');
+                setTimeout(explodeChest, 2500);
+            }, 2000);
+        });
+
+        // --- Step 2: Explode Chest ---
+        function explodeChest() {
+            chest.classList.remove('shake-wiggle');
+            const rect = chest.getBoundingClientRect(); // Get position relative to viewport
+            const chestImageUrl = chest.src;
+
+            // Instantly hide the chest image itself
+            chest.style.opacity = '0';
+            chest.style.visibility = 'hidden'; // Use visibility to remove from layout flow immediately
+
+            // Position explosion container exactly where the chest was
+            explosionContainer.style.top = `${rect.top}px`;
+            explosionContainer.style.left = `${rect.left}px`;
+            explosionContainer.style.width = `${rect.width}px`;
+            explosionContainer.style.height = `${rect.height}px`;
+            explosionContainer.style.display = 'block'; // Make sure it's visible
+            explosionContainer.innerHTML = ''; // Clear previous particles
+
+            for (let i = 0; i < 40; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'explosion-particle';
+
+                const pWidth = Math.random() * (rect.width / 8) + (rect.width / 15);
+                const pHeight = Math.random() * (rect.height / 8) + (rect.height / 15);
+                particle.style.setProperty('--particle-width', `${pWidth}px`);
+                particle.style.setProperty('--particle-height', `${pHeight}px`);
+
+                const startX = Math.random() * (rect.width - pWidth);
+                const startY = Math.random() * (rect.height - pHeight);
+                particle.style.left = `${startX}px`;
+                particle.style.top = `${startY}px`;
+
+                particle.style.backgroundImage = `url(${chestImageUrl})`;
+                particle.style.backgroundPosition = `-${startX}px -${startY}px`;
+
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                // Make spread factor a bit smaller relative to viewport
+                const spreadFactor = Math.min(viewportWidth, viewportHeight) * 0.4;
+
+                // Adjust end positions to better center the explosion spread
+                // Calculate offset from particle center to container center
+                const offsetX = (rect.width / 2) - (startX + pWidth / 2);
+                const offsetY = (rect.height / 2) - (startY + pHeight / 2);
+
+                // Add random spread + offset correction
+                const endX = (Math.random() - 0.5) * spreadFactor * 2 + offsetX * (Math.random()*0.5 + 0.5); // Add some variation to offset push
+                const endY = (Math.random() - 0.5) * spreadFactor * 2 + offsetY * (Math.random()*0.5 + 0.5);
+
+                const rot = (Math.random() - 0.5) * 1080;
+                const scale = Math.random() * 0.7 + 0.3;
+
+                particle.style.setProperty('--explode-transform', `translate(${endX}px, ${endY}px) rotate(${rot}deg) scale(${scale})`);
+
+                explosionContainer.appendChild(particle);
+            }
+
+            // Hide the original chest container structure from layout
+            chestContainer.style.display = 'none';
+
+            // Clean up and show gifts after animation
+            setTimeout(() => {
+                explosionContainer.style.display = 'none'; // Hide container after particles fade
+                explosionContainer.innerHTML = ''; // Clear particles from DOM
+                showGifts();
+            }, 1200); // Match animation duration
+        }
+
+
+        // --- Step 3: Show Gifts ---
+        function showGifts() {
+            giftsContainer.classList.remove('hidden');
+            giftsContainer.style.opacity = '1';
+            giftsContainer.classList.remove('opacity-0');
+
+            giftsGrid.innerHTML = ''; // Clear previous gifts if any
+            giftImages.forEach((src, index) => {
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = `Expensive Gift ${index + 1}`;
+                // Adjusted gift sizes for responsiveness: Larger on xs/sm screens
+                // CHANGED: Removed bg-white bg-opacity-10 and border-white, changed to darker shadows/borders for light mode visibility
+                img.className = 'w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 object-contain rounded-xl gift-pop bg-white border border-gray-200 p-1 shadow-lg';
+                img.style.setProperty('--gift-delay', `${index * 0.15}s`);
+                img.onerror = function() {
+                    this.onerror=null;
+                    this.src='https://placehold.co/160x160/777/FFF?text=Gift+Not+Found';
+                    console.error(`Failed to load image: ${src}`);
+                };
+                giftsGrid.appendChild(img);
+            });
+
+            // Show button slightly after the last gift starts animating in
+            setTimeout(showCollectButton, giftImages.length * 150 + 500);
+        }
+
+        // --- Step 4: Show Collect Button ---
+         function showCollectButton() {
+            collectBtn.classList.remove('hidden');
+            collectBtn.style.opacity = '0'; // Prepare for fade-in
+            // Force reflow to ensure animation triggers
+            void collectBtn.offsetWidth;
+            collectBtn.classList.add('fade-in');
+             // Remove opacity style after animation starts to let CSS control it
+            collectBtn.style.opacity = '';
+        }
+
+
+        // --- Step 5: Click Collect ---
+        collectBtn.addEventListener('click', () => {
+            // Fade out gifts container (button fades with it via CSS)
+            giftsContainer.classList.add('transition-opacity', 'duration-500', 'opacity-0');
+            // Wait for fade out, then hide gifts and show form
+            setTimeout(() => {
+                giftsContainer.classList.add('hidden'); // Hide completely
+                formContainer.classList.remove('hidden'); // Show form container
+                formContainer.style.opacity = '0'; // Prepare for fade-in
+                // Force reflow
+                void formContainer.offsetWidth;
+                formContainer.classList.add('fade-in'); // Add fade-in class
+                formContainer.style.opacity = ''; // Let CSS handle opacity
+                 // Focus the input field when the form appears
+                usernameInput.focus();
+            }, 500); // Match fade duration
+        });
+
+        // --- Step 6: Submit Form (Validation fix included) ---
+        proceedBtn.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            // Reset potential validation error state
+            usernameInput.classList.remove('border-red-500', 'ring-red-500');
+
+            if (username === "") {
+                // Add error state and update placeholder
+                usernameInput.classList.add('border-red-500', 'ring-red-500');
+                usernameInput.placeholder = "Please enter a username!";
+                usernameInput.focus(); // Keep focus on the input
+                return; // Stop processing
+            }
+             // Reset placeholder if validation passes
+             usernameInput.placeholder = "Enter your username";
+
+            // Fade out form
+            formContainer.classList.add('transition-opacity', 'duration-500', 'opacity-0');
+            // Wait for fade, then hide form and show final screen
+            setTimeout(() => {
+                formContainer.classList.add('hidden');
+                showFinalScreen(username);
+            }, 500);
+        });
+
+        // --- Step 7: Final Screen & Particles ---
+        function showFinalScreen(username) {
+            finalScreen.classList.remove('hidden'); // Make final screen visible
+            finalScreen.style.opacity = '0'; // Prepare for fade-in
+            // Force reflow
+            void finalScreen.offsetWidth;
+            finalScreen.classList.add('fade-in'); // Add fade-in class
+            finalScreen.style.opacity = ''; // Let CSS handle opacity
+            finalMessage.textContent = `Congratulations, ${username}!`; // Set message
+
+            startParticleEffect(); // Start confetti
+            // Checkmark animation starts via CSS delays defined in the style tag
+        }
+
+        // --- Particle Effect (Confetti for final screen) ---
+        function startParticleEffect() {
+            confettiContainer.innerHTML = ''; // Clear previous confetti
+            const colors = ['#ee0979', '#ff6a00', '#00e676', '#00b0ff', '#ffeb3b', '#e040fb'];
+            for (let i = 0; i < 150; i++) { // More confetti
+                const particle = document.createElement('div');
+                particle.className = 'confetti-particle';
+                // Position randomly across the viewport width
+                particle.style.left = `${Math.random() * 100}vw`;
+                // Random color
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                // Random animation start delay
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                // Random fall duration
+                particle.style.animationDuration = `${Math.random() * 4 + 4}s`; // 4-8s duration
+
+                confettiContainer.appendChild(particle);
+            }
+        }
+
+        // Optional: Add resize listener if chest position might change dynamically (unlikely here)
+        // window.addEventListener('resize', () => {
+        //     if (explosionContainer.style.display === 'block') {
+        //         // Re-calculate rect and update explosionContainer position if needed
+        //     }
+        // });
+
+    </script>
+</body>
+</html>
